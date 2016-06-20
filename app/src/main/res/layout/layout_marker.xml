@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/vin"
+        android:layout_width="78dp"
+        android:layout_height="29dp"
+        android:gravity="center"
+        android:lines="2"
+        android:textColor="#555555"
+        android:textSize="12sp" />
+
+    <ImageView
+        android:id="@+id/marker"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/vin"
+        android:layout_centerInParent="true" />
+
+</RelativeLayout>
