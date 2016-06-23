@@ -131,19 +131,24 @@ public class MainActivity extends Activity implements AMap.OnMarkerClickListener
     public void onCameraChangeFinish(CameraPosition cameraPosition) {
         curZoom = cameraPosition.zoom;
         if ((mLastZoom == MINSCOPE || mLastZoom != curZoom)) {
+            resetMarker();
             resetMarks();
             mLastZoom = curZoom;
         }
     }
 
-    @Override
-    public void onMapClick(LatLng latLng) {
+    private void resetMarker() {
         if (preAddMarker != null) {
             preAddMarker.remove();
             preClickMarker.setVisible(true);
             preAddMarker = null;
             preClickMarker = null;
         }
+    }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+        resetMarker();
     }
 
     @Override
