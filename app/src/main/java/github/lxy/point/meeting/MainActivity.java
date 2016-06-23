@@ -138,7 +138,12 @@ public class MainActivity extends Activity implements AMap.OnMarkerClickListener
 
     @Override
     public void onMapClick(LatLng latLng) {
-
+        if (preAddMarker != null) {
+            preAddMarker.remove();
+            preClickMarker.setVisible(true);
+            preAddMarker = null;
+            preClickMarker = null;
+        }
     }
 
     @Override
