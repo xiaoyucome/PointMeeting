@@ -5,18 +5,21 @@ import android.graphics.Point;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.amap.api.maps.AMap;
+import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.MapView;
 import com.amap.api.maps.Projection;
 import com.amap.api.maps.model.BitmapDescriptor;
 import com.amap.api.maps.model.BitmapDescriptorFactory;
 import com.amap.api.maps.model.CameraPosition;
 import com.amap.api.maps.model.LatLng;
+import com.amap.api.maps.model.LatLngBounds;
 import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
 
@@ -34,6 +37,7 @@ public class MainActivity extends Activity implements AMap.OnMarkerClickListener
     private ArrayList<MarkerOptions> mMakerOptionsList = new ArrayList<MarkerOptions>();//聚合时用
     private ArrayList<MarkerBean> markerBeans = new ArrayList<MarkerBean>();// 视野内的marker
     private static final int GIRDSIZE = 70;
+    private Marker preAddMarker, preClickMarker;
 
     @Bind(R.id.map)
     MapView mMapView;
@@ -46,7 +50,19 @@ public class MainActivity extends Activity implements AMap.OnMarkerClickListener
         mMapView.onCreate(savedInstanceState);
         initMap();
         initViews();
-        drawCars();
+        initData();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                drawCars();
+            }
+        }).start();
     }
 
     private void initMap() {
@@ -67,6 +83,18 @@ public class MainActivity extends Activity implements AMap.OnMarkerClickListener
         height = dm.heightPixels;
     }
 
+    private void initData() {
+        for (int i = 0; i < 100; i++) {
+            MarkerBean markerBean = new MarkerBean();
+            double lat = Math.random() * 6 + 39;
+            double lng = Math.random() * 6 + 116;
+            markerBean.lat = lat;
+            markerBean.lng = lng;
+            markerBean.title = String.valueOf(i);
+            markerBeans.add(markerBean);
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -79,17 +107,18 @@ public class MainActivity extends Activity implements AMap.OnMarkerClickListener
     private void drawCars() {
         aMap.clear();
         mMakerOptionsList.clear();
-        for (int i = 0; i < 200; i++) {
-            LatLng latLng = new LatLng(Math.random() * 6 + 39,
-                    Math.random() * 6 + 116);
-            MarkerBean markerBean = new MarkerBean();
-            markerBeans.add(markerBean);
-            markerBean.title = String.valueOf(i);
-            MarkerOptions option = new MarkerOptions();
-            option.title(String.valueOf(latLng)).position(latLng).icon(BitmapDescriptorFactory
-                    .defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
-            mMakerOptionsList.add(option);
-            aMap.addMarker(option);
+
+        if (markerBeans != null) {
+            for (int i = 0; i < markerBeans.size(); i++) {
+                MarkerBean markerBean = markerBeans.get(i);
+                LatLng latLng = new LatLng(markerBean.lat, markerBean.lng);
+                MarkerOptions option = new MarkerOptions();
+                option.title(markerBean.title).position(latLng);
+                mMakerOptionsList.add(option);
+                aMap.addMarker(option);
+            }
+            aMap.moveCamera(CameraUpdateFactory.newLatLngBounds(new LatLngBounds(LatLngUtil.getSWPoint(markerBeans), LatLngUtil.getNEPoint(markerBeans)), 100));
+//            aMap.moveCamera(CameraUpdateFactory.newLatLngBounds(new LatLngBounds(LatLngUtil.getSWPoint(markerBeans), LatLngUtil.getNEPoint(markerBeans)), 500, 500, 100));
         }
     }
 
@@ -114,7 +143,31 @@ public class MainActivity extends Activity implements AMap.OnMarkerClickListener
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        return false;
+        if ((preClickMarker == null || !preClickMarker.getTitle().equals(marker.getTitle())) && (!"聚合点".equals(marker.getTitle()))) {
+            if (preAddMarker != null) {
+                preAddMarker.remove();
+                preAddMarker = null;
+                preClickMarker.setVisible(true);
+            }
+            preClickMarker = marker;
+            marker.setVisible(false);
+            LatLng clickLatLng = marker.getPosition();
+            MarkerOptions clickOption = new MarkerOptions();
+            clickOption.position(clickLatLng);
+            changeMarkerIcon(marker, clickOption);
+        }
+        return true;
+    }
+
+    public void changeMarkerIcon(Marker marker, MarkerOptions clickOption) {
+        for (int i = 0; i < markerBeans.size(); i++) {
+            MarkerBean markerBean = markerBeans.get(i);
+            if (marker.getTitle().equals(markerBean.title)) {
+                clickOption.title(markerBean.title);
+                clickOption.icon(markerSelected(markerBean.title, true));
+                preAddMarker = aMap.addMarker(clickOption);
+            }
+        }
     }
 
     private void resetMarks() {
